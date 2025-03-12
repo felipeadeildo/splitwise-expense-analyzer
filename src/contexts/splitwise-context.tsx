@@ -24,7 +24,7 @@ interface Expense {
     cost: string;
     date: string;
     created_at: string;
-    category: { id: number; name: string };
+    category: { id: number; name: string } | null;
     payment: boolean;
     users: {
         user_id: number;
@@ -190,17 +190,22 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
             }
 
             const mainData = await response.json();
+            console.log('Main data loaded:', mainData);
+
+            // Garantir que temos grupos
+            const groups = mainData.groups || [];
+            const selectedGroup = groups.length > 1 ? groups[1] : groups[0]; // Pega o primeiro grupo real se possível
 
             setData(prev => ({
                 ...prev,
-                groups: mainData.groups,
-                selectedGroup: mainData.groups.length > 0 ? mainData.groups[1] : null, // Skip the non-group (index 0)
+                groups: groups,
+                selectedGroup: selectedGroup,
                 selectedUserId: user?.id || null
             }));
 
-            // If we have a selected group, load its expenses
-            if (mainData.groups.length > 0) {
-                await loadGroupExpenses(mainData.groups[1].id);
+            // Se temos um grupo selecionado, carregue suas despesas
+            if (selectedGroup) {
+                await loadGroupExpenses(selectedGroup.id);
             }
         } catch (e) {
             setError(e instanceof Error ? e.message : 'An unknown error occurred');
@@ -228,10 +233,14 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
             }
 
             const expensesData = await response.json();
+            console.log('Expenses data loaded:', expensesData);
+
+            // Corrigindo aqui: extraindo o array 'expenses' da resposta
+            const expenses = expensesData.expenses || [];
 
             setData(prev => ({
                 ...prev,
-                expenses: expensesData
+                expenses: expenses
             }));
         } catch (e) {
             setError(e instanceof Error ? e.message : 'An unknown error occurred');
@@ -246,7 +255,8 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
         if (selectedGroup) {
             setData(prev => ({
                 ...prev,
-                selectedGroup
+                selectedGroup,
+                expenses: [] // Limpa as despesas ao trocar de grupo
             }));
             loadGroupExpenses(groupId);
         }
@@ -263,10 +273,15 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
         const userId = data.selectedUserId;
         if (!userId) return;
 
+        console.log('Processing data for user ID:', userId);
+        console.log('Number of expenses:', data.expenses.length);
+
         // Sort expenses by date
-        const sortedExpenses = [...data.expenses].sort((a, b) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
+        const sortedExpenses = [...data.expenses].sort((a, b) => {
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            return dateA - dateB;
+        });
 
         // Initialize data structures
         let runningBalance = 0;
@@ -280,106 +295,116 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
 
         // Process each expense
         sortedExpenses.forEach(expense => {
-            const date = new Date(expense.date);
-            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+            try {
+                const date = new Date(expense.date);
+                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
 
-            // Find the user's involvement in this expense
-            const userInvolvement = expense.users.find(u => u.user_id === userId);
+                // Find the user's involvement in this expense
+                const userInvolvement = expense.users.find(u => u.user_id === userId);
 
-            if (userInvolvement) {
-                // Add to running totals
-                const paidAmount = parseFloat(userInvolvement.paid_share) || 0;
-                const owedAmount = parseFloat(userInvolvement.owed_share) || 0;
-                const netAmount = parseFloat(userInvolvement.net_balance) || 0;
+                if (userInvolvement) {
+                    // Add to running totals - convertendo strings para números
+                    const paidAmount = parseFloat(userInvolvement.paid_share) || 0;
+                    const owedAmount = parseFloat(userInvolvement.owed_share) || 0;
+                    const netAmount = parseFloat(userInvolvement.net_balance) || 0;
 
-                totalPaid += paidAmount;
-                totalOwed += owedAmount;
-                runningBalance += netAmount;
+                    totalPaid += paidAmount;
+                    totalOwed += owedAmount;
+                    runningBalance += netAmount;
 
-                // Add to balance history
-                history.push({
-                    date: formattedDate,
-                    fullDate: date,
-                    id: expense.id,
-                    description: expense.description,
-                    isPayment: expense.payment,
-                    amount: parseFloat(expense.cost),
-                    paidShare: paidAmount,
-                    owedShare: owedAmount,
-                    netAmount: netAmount,
-                    runningBalance: runningBalance
-                });
+                    // Add to balance history
+                    history.push({
+                        date: formattedDate,
+                        fullDate: date,
+                        id: expense.id,
+                        description: expense.description || "Sem descrição",
+                        isPayment: expense.payment || false,
+                        amount: parseFloat(expense.cost) || 0,
+                        paidShare: paidAmount,
+                        owedShare: owedAmount,
+                        netAmount: netAmount,
+                        runningBalance: runningBalance
+                    });
 
-                // Track expenses by category
-                const category = expense.category ? expense.category.name : 'Uncategorized';
-                if (!expense.payment) {
-                    if (!categoryTotals[category]) {
-                        categoryTotals[category] = 0;
-                    }
-                    categoryTotals[category] += owedAmount;
-                }
-
-                // Track money owed to/by other users
-                expense.repayments.forEach(repayment => {
-                    const fromUserId = repayment.from;
-                    const toUserId = repayment.to;
-                    const amount = parseFloat(repayment.amount);
-
-                    if (fromUserId === userId) {
-                        // Current user owes money to someone
-                        if (!userOwed[toUserId]) {
-                            userOwed[toUserId] = { owed: 0, owned: 0 };
+                    // Track expenses by category
+                    if (!expense.payment) {
+                        const category = expense.category ? expense.category.name : 'Sem categoria';
+                        if (!categoryTotals[category]) {
+                            categoryTotals[category] = 0;
                         }
-                        userOwed[toUserId].owed += amount;
-                    } else if (toUserId === userId) {
-                        // Someone owes money to current user
-                        if (!userOwed[fromUserId]) {
-                            userOwed[fromUserId] = { owed: 0, owned: 0 };
-                        }
-                        userOwed[fromUserId].owned += amount;
+                        categoryTotals[category] += owedAmount;
                     }
-                });
 
-                // Add to recent transactions
-                transactions.push({
-                    id: expense.id,
-                    date: date,
-                    description: expense.description,
-                    isPayment: expense.payment,
-                    amount: parseFloat(expense.cost),
-                    paidShare: paidAmount,
-                    owedShare: owedAmount,
-                    netAmount: netAmount,
-                    category: category
-                });
+                    // Track money owed to/by other users
+                    if (expense.repayments && Array.isArray(expense.repayments)) {
+                        expense.repayments.forEach(repayment => {
+                            const fromUserId = repayment.from;
+                            const toUserId = repayment.to;
+                            const amount = parseFloat(repayment.amount) || 0;
 
-                // Add to payment breakdown if significant
-                if (Math.abs(netAmount) > 0.01) {
-                    breakdown.push({
+                            if (fromUserId === userId) {
+                                // Current user owes money to someone
+                                if (!userOwed[toUserId]) {
+                                    userOwed[toUserId] = { owed: 0, owned: 0 };
+                                }
+                                userOwed[toUserId].owed += amount;
+                            } else if (toUserId === userId) {
+                                // Someone owes money to current user
+                                if (!userOwed[fromUserId]) {
+                                    userOwed[fromUserId] = { owed: 0, owned: 0 };
+                                }
+                                userOwed[fromUserId].owned += amount;
+                            }
+                        });
+                    }
+
+                    // Add to recent transactions
+                    transactions.push({
                         id: expense.id,
                         date: date,
-                        description: expense.description,
-                        amount: Math.abs(netAmount),
-                        isPositive: netAmount > 0,
-                        category: category
+                        description: expense.description || "Sem descrição",
+                        isPayment: expense.payment || false,
+                        amount: parseFloat(expense.cost) || 0,
+                        paidShare: paidAmount,
+                        owedShare: owedAmount,
+                        netAmount: netAmount,
+                        category: expense.category ? expense.category.name : 'Sem categoria'
                     });
+
+                    // Add to payment breakdown if significant
+                    if (Math.abs(netAmount) > 0.01) {
+                        breakdown.push({
+                            id: expense.id,
+                            date: date,
+                            description: expense.description || "Sem descrição",
+                            amount: Math.abs(netAmount),
+                            isPositive: netAmount > 0,
+                            category: expense.category ? expense.category.name : 'Sem categoria'
+                        });
+                    }
                 }
+            } catch (err) {
+                console.error('Error processing expense:', err, expense);
             }
         });
 
         // Convert category data to array for chart
-        const categoryData = Object.keys(categoryTotals).map(category => ({
-            name: category,
-            value: categoryTotals[category]
-        })).filter(item => item.value > 0).sort((a, b) => b.value - a.value);
+        const categoryData = Object.keys(categoryTotals)
+            .map(category => ({
+                name: category,
+                value: categoryTotals[category]
+            }))
+            .filter(item => item.value > 0)
+            .sort((a, b) => b.value - a.value);
 
         // Convert user owed data to array
         const userDebtsData = Object.keys(userOwed).map(uid => {
             const numUid = parseInt(uid);
-            const userOwedData = userOwed[numUid]; // Get the data with proper numeric index
+            const userOwedData = userOwed[numUid];
+
             // Find user name
             let userName = `User ${uid}`;
-            if (data.selectedGroup) {
+            if (data.selectedGroup && data.selectedGroup.members) {
                 const member = data.selectedGroup.members.find(m => m.id === numUid);
                 if (member) {
                     userName = member.first_name + (member.last_name ? ` ${member.last_name}` : '');
@@ -396,12 +421,21 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
         }).sort((a, b) => Math.abs(b.netBalance) - Math.abs(a.netBalance));
 
         // Sort and limit recent transactions
-        const sortedTransactions = [...transactions].sort((a, b) =>
-            b.date.getTime() - a.date.getTime()
-        ).slice(0, 10);
+        const sortedTransactions = [...transactions]
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .slice(0, 10);
 
         // Sort payment breakdown by amount
         const sortedBreakdown = [...breakdown].sort((a, b) => b.amount - a.amount);
+
+        console.log('Processed data:', {
+            balanceCount: history.length,
+            categoryCount: categoryData.length,
+            transactionCount: sortedTransactions.length,
+            userBalance: runningBalance,
+            totalPaid: totalPaid,
+            totalOwed: totalOwed
+        });
 
         // Update state with processed data
         setProcessedData({
