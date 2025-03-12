@@ -18,23 +18,23 @@ interface PieChartLabelProps {
   value: number;
 }
 
-const PieChartLabel: React.FC<PieChartLabelProps> = ({ 
-  cx, cy, midAngle, innerRadius, outerRadius, percent, name 
-}) => {
+const PieChartLabel = ({
+  cx, cy, midAngle, innerRadius, outerRadius, percent, name
+}: PieChartLabelProps): React.ReactNode => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  
+
   // Only show label if percent is significant
   if (percent < 0.05) return null;
-  
+
   return (
-    <text 
-      x={x} 
-      y={y} 
-      fill="white" 
-      textAnchor={x > cx ? 'start' : 'end'} 
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor={x > cx ? 'start' : 'end'}
       dominantBaseline="central"
       className="text-xs"
     >
@@ -46,7 +46,7 @@ const PieChartLabel: React.FC<PieChartLabelProps> = ({
 export const CategoryDistribution: React.FC = () => {
   const { processedData } = useSplitwise();
   const { categoryDistribution } = processedData;
-  
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -67,11 +67,11 @@ export const CategoryDistribution: React.FC = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {categoryDistribution.map((entry, index) => (
+                  {categoryDistribution.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => formatCurrency(value, 'BRL')} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value), 'BRL')} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
