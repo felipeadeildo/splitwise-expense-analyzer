@@ -53,11 +53,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(true);
         setError(null);
         try {
-            // Validate the cookie by making an API call
-            const response = await fetch('https://secure.splitwise.com/api/v3.0/get_main_data?no_expenses=1&limit=3', {
+            // Usar o cookie exatamente como foi fornecido
+            const response = await fetch('/api/get_main_data?no_expenses=1&limit=3', {
+                credentials: 'include',
                 headers: {
-                    'Cookie': cookieValue,
-                    'Credentials': 'include'
+                    'x-splitwise-cookie': cookieValue
                 }
             });
 
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             const data = await response.json();
 
-            // Extract user data
+            // O resto do código permanece igual...
             const userData: User = {
                 id: data.user.id,
                 firstName: data.user.first_name,
@@ -75,11 +75,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 email: data.user.email
             };
 
-            // Save to localStorage
+            // Salvar o cookie exatamente como foi fornecido
             localStorage.setItem('splitwise_cookie', cookieValue);
             localStorage.setItem('splitwise_user', JSON.stringify(userData));
 
-            // Update state
             setCookie(cookieValue);
             setUser(userData);
             setIsAuthenticated(true);

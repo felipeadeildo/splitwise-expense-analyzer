@@ -179,10 +179,9 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
         setError(null);
 
         try {
-            const response = await fetch('https://secure.splitwise.com/api/v3.0/get_main_data?no_expenses=1&limit=3', {
+            const response = await fetch('/api/get_main_data?no_expenses=1&limit=3', {
                 headers: {
-                    'Cookie': cookie,
-                    'Credentials': 'include'
+                    'x-splitwise-cookie': cookie
                 }
             });
 
@@ -218,10 +217,9 @@ export const SplitwiseProvider: React.FC<SplitwiseProviderProps> = ({ children }
         setError(null);
 
         try {
-            const response = await fetch(`https://secure.splitwise.com/api/v3.0/get_expenses?visible=true&group_id=${groupId}&limit=25`, {
+            const response = await fetch(`/api/get_expenses?visible=true&group_id=${groupId}&limit=25`, {
                 headers: {
-                    'Cookie': cookie,
-                    'Credentials': 'include'
+                    'x-splitwise-cookie': cookie
                 }
             });
 
