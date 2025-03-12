@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSplitwise } from '@/hooks/use-splitwise';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Area, Bar, CartesianGrid, ComposedChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, Bar, CartesianGrid, Cell, ComposedChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 
 interface CustomTooltipProps {
@@ -84,9 +84,12 @@ export const ExpenseTimeline: React.FC = () => {
                             <Bar
                                 dataKey="netAmount"
                                 name="Transação"
-                                fill={(data) => (data.netAmount > 0 ? '#10b981' : '#ef4444')}
                                 barSize={10}
-                            />
+                            >
+                                {balanceHistory.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.netAmount >= 0 ? '#10b981' : '#ef4444'} />
+                                ))}
+                            </Bar>
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>
