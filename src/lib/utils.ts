@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -17,15 +17,15 @@ export function formatCurrency(
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
-    ...options
-  }).format(amount);
+    ...options,
+  }).format(amount)
 }
 
 /**
  * Extracts date components from ISO date string
  */
 export function extractDateComponents(isoDateString: string) {
-  const date = new Date(isoDateString);
+  const date = new Date(isoDateString)
   return {
     day: date.getDate(),
     month: date.getMonth() + 1,
@@ -35,15 +35,15 @@ export function extractDateComponents(isoDateString: string) {
     formattedDate: date.toLocaleDateString('pt-BR'),
     formattedTime: date.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
-      minute: '2-digit'
-    })
-  };
+      minute: '2-digit',
+    }),
+  }
 }
 
 /**
  * Truncates text to a specific length
  */
 export function truncateText(text: string, maxLength: number) {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength) + '...'
 }

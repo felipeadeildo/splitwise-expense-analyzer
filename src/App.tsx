@@ -1,22 +1,22 @@
-import React from 'react';
-import { AuthProvider } from './contexts/auth-context';
-import { SplitwiseProvider } from './contexts/splitwise-context';
-import { useAuth } from './hooks/use-auth';
-import './index.css';
+import React from 'react'
+import { AuthProvider } from './contexts/auth-context'
+import { SplitwiseProvider } from './contexts/splitwise-context'
+import { useAuth } from './hooks/use-auth'
+import './index.css'
 
-import LoginView from './components/views/login-view';
-import DashboardView from './components/views/dashboard-view';
+import DashboardView from './components/views/dashboard-view'
+import LoginView from './components/views/login-view'
 
 // Provider que encapsula o controle de visualização
 const AppContent = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-500">Carregando...</p>
       </div>
-    );
+    )
   }
 
   // Exibe a login view se não estiver autenticado, caso contrário mostra o dashboard
@@ -26,8 +26,8 @@ const AppContent = () => {
     </SplitwiseProvider>
   ) : (
     <LoginView />
-  );
-};
+  )
+}
 
 // Componente App principal
 const App: React.FC = () => {
@@ -35,7 +35,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <AppContent />
     </AuthProvider>
-  );
-};
+  )
+}
 
-export default App;
+export default App

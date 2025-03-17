@@ -1,18 +1,27 @@
-import React from 'react';
-import { useSplitwise } from '@/hooks/use-splitwise';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { useSplitwise } from '@/hooks/use-splitwise'
+import { formatCurrency } from '@/lib/utils'
+import React from 'react'
 
 export const ExpenseBreakdown: React.FC = () => {
-  const { processedData } = useSplitwise();
-  const { expenseBreakdown } = processedData;
-  
+  const { processedData } = useSplitwise()
+  const { expenseBreakdown } = processedData
+
   return (
     <Card className="col-span-3">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium">O que Está Afetando Seu Saldo?</CardTitle>
+        <CardTitle className="text-lg font-medium">
+          O que Está Afetando Seu Saldo?
+        </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="overflow-x-auto">
@@ -28,19 +37,24 @@ export const ExpenseBreakdown: React.FC = () => {
             </TableHeader>
             <TableBody>
               {expenseBreakdown.slice(0, 10).map((item, index) => (
-                <TableRow key={index} className={index % 2 === 0 ? 'bg-muted/50' : ''}>
-                  <TableCell className="font-medium">{item.description}</TableCell>
+                <TableRow
+                  key={index}
+                  className={index % 2 === 0 ? 'bg-muted/50' : ''}
+                >
+                  <TableCell className="font-medium">
+                    {item.description}
+                  </TableCell>
                   <TableCell>{item.date.toLocaleDateString()}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(item.amount, 'BRL')}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge 
+                    <Badge
                       variant={item.isPositive ? 'outline' : 'destructive'}
                       className={`${
-                        item.isPositive 
-                          ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800' 
+                        item.isPositive
+                          ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800'
                           : ''
                       }`}
                     >
@@ -51,7 +65,10 @@ export const ExpenseBreakdown: React.FC = () => {
               ))}
               {expenseBreakdown.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-6 text-muted-foreground"
+                  >
                     Nenhum dado disponível
                   </TableCell>
                 </TableRow>
@@ -61,7 +78,7 @@ export const ExpenseBreakdown: React.FC = () => {
         </div>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default ExpenseBreakdown;
+export default ExpenseBreakdown
